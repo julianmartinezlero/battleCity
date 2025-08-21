@@ -9,6 +9,7 @@ class Game {
     
     // Actualizar el juego cada 16ms (~60fps)
     setInterval(this.update.bind(this), 16);
+
   }
   
   generateMap() {
@@ -146,6 +147,8 @@ class Game {
     const now = Date.now();
     const dt = now - this.lastUpdateTime;
     this.lastUpdateTime = now;
+    let bulletsUpdated = false;
+
     
     // Actualizar posición de las balas
     for (let i = this.bullets.length - 1; i >= 0; i--) {
@@ -158,6 +161,7 @@ class Game {
         case 'left': bullet.x -= bullet.speed; break;
         case 'right': bullet.x += bullet.speed; break;
       }
+      bulletsUpdated = true
       
       // Verificar colisiones con el mapa
       const mapX = Math.floor(bullet.x);
@@ -206,6 +210,10 @@ class Game {
     // Enviar actualizaciones periódicamente o cuando haya cambios
     if (this.shouldSendUpdate) {
       this.shouldSendUpdate = false;
+    }
+
+    if (bulletsUpdated) {
+      this.shouldSendUpdate = true;
     }
   }
   

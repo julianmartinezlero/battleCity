@@ -22,10 +22,18 @@ wss.on('connection', (ws) => {
   
   
   // Enviar estado inicial a todos los clientes
-  broadcastGameState();
+    // setInterval(this.update.bind(this), 16);
+    setInterval(() => {
+    if (game.shouldSendUpdate || Object.keys(game.players).length > 0) {
+      broadcastGameState();
+      game.shouldSendUpdate = false;
+    }
+  }, 50); // Enviar updates cada 50ms (20 FPS)
+  // broadcastGameState();
   
   // Escuchar mensajes del cliente
   ws.on('message', (message) => {
+
     try {
       const data = JSON.parse(message);
       
@@ -37,6 +45,10 @@ wss.on('connection', (ws) => {
       } else if (data.type === 'fire') {
         game.playerFire(playerId);
         broadcastGameState();
+      }
+      while (true) {
+        broadcastGameState();
+        console.log('update')
       }
     } catch (error) {
       console.error('Error procesando mensaje:', error);

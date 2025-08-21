@@ -36,6 +36,7 @@ export default function App() {
           setPlayerId(data.playerId);
           setGameState(data.gameState);
         } else if (data.type === 'update') {
+        console.log('act')
           setGameState(data.gameState);
         }
       } catch (error) {
@@ -103,7 +104,7 @@ export default function App() {
           style={styles.fireButton} 
           onPress={handleFire}
         >
-          <Text style={styles.fireButtonText}>FIRE</Text>
+          <Text style={styles.fireButtonText}>Fuego</Text>
         </TouchableOpacity>
       </View>
     </View>

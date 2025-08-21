@@ -146,9 +146,9 @@ const styles = StyleSheet.create({
   },
   bullet: {
     position: 'absolute',
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: '#FFD700', // Dorado
   },
   debugInfo: {
