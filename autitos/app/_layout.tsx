@@ -36,15 +36,17 @@ export default function RootLayout() {
     return ((screenWidth/4) * 3) - (autoAncho /2)
   }
 
-  const moverDerecha = ()=> {
+  const moverDerecha = () => {
+    console.log(ubicacion)
     if (ubicacion === 'izq')
       setUbicacion('der')
-    console.log(ubicacion)
   }
 
   const moverIzquierda = () => {
-    setUbicacion('izq')
+    if (ubicacion === 'der')
+      setUbicacion('izq')
     console.log(ubicacion)
+
 
   }
 
@@ -60,7 +62,7 @@ export default function RootLayout() {
         <View style={styles.botones}>
         <Pressable style={styles.btnIzq} onPress={ () => moverIzquierda()}>
         </Pressable>
-        <Pressable style={styles.btnDer} onPress={()=> moverDerecha()}>
+        <Pressable style={styles.btnDer} onPress={() => moverDerecha()}>
 
         </Pressable>
         </View>
@@ -84,22 +86,23 @@ const styles = StyleSheet.create({
   botones: {
     height:'25%',
     width: '100%',
-    backgroundColor:'blue',
     position: 'absolute',
     bottom: 0,
-    opacity: 0.3
+    opacity: 0.3,
+    display: 'flex',
+    flexDirection: 'row',
   },
   btnIzq: {
     backgroundColor: 'green',
     height: '100%',
     width: '50%',
-        // opacity: 0
+
   },
   btnDer: {
-    backgroundColor: 'blue',
+    backgroundColor: 'red',
     height: '100%',
     width: '50%',
-        // opacity: 0.2
+
   },
   auto: {
     width: autoAncho,
