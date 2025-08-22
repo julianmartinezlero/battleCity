@@ -4,23 +4,81 @@ import { Dimensions, Pressable, StyleSheet, View } from 'react-native';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { Auto } from '@/models/auto';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 
 const autoAncho=100
 
 
 export default function RootLayout() {
+  const screenWidth = Dimensions.get('screen').width;
+  const screenHeight = Dimensions.get('screen').height;
+  const [autos, setAutos] = useState([
+  { 
+    id: 12,
+    'modelo' : '12321',
+    'color' : '#fa434a',
+    'heigth' : 120,
+    width: 100,
+    'ubicacionX': (screenWidth/4) - (100 /2),
+    ubicacionY:  200,
+    carril: 'izq'
+ },
+  { 
+    id: 14,
+    'modelo' : '12321',
+    'color' : '#faa34a',
+    'heigth' : 120,
+    width: 100,
+    'ubicacionX': ((screenWidth/4) * 3) - (100 /2),
+    ubicacionY: 0,
+    carril: 'der'
+  }
+])
+
   const colorScheme = useColorScheme();
 
-  const screenWidth = Dimensions.get('screen').width;
 
   const  [ubicacion, setUbicacion] = useState('der');
 
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
+
+  const iniciarMotor = () => {
+    // PARA X; condicion; incrementar HACER:
+
+    for (const au of autos) {
+      if(au.ubicacionY < screenHeight - 50) {
+        au.ubicacionY = au.ubicacionY + 1
+      }
+    }
+
+
+    const nuevoAuto: Auto = {
+      id: (new Date()).getTime(),
+      'modelo' : '12321',
+      'color' : '#003bfeff',
+      'heigth' : 120,
+      width: 100,
+      'ubicacionX': (screenWidth/4) - (100 /2),
+      ubicacionY:  0,
+      carril: 'izq'
+    }
+    setAutos([...autos, nuevoAuto])
+
+    console.log(autos.length)
+  }
+
+
+  useEffect(() => {
+    // iniciarMotor()
+    setInterval(() => {
+      iniciarMotor()
+    }, 50)
+  }, [])
 
 
 
@@ -52,11 +110,25 @@ export default function RootLayout() {
 
 
 
+  const dibujarAutos = () => {
+    return autos.map(r => {
+      return (<View key={r.id} style={
+        {...styles.autoEnemigo,
+        backgroundColor: r.color,
+        left: r.ubicacionX, top: r.ubicacionY}}>
+
+      </View>)
+    })
+  }
+
+
+
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <StatusBar style="auto" />
       <View style={styles.contenedor}>
         <View style={styles.canvas}>
+          {dibujarAutos()}
           <View style={{...styles.auto, left: ubicacion === 'izq' ? calcularIzquierda() : calcularDerecha()}}></View>
         </View>
         <View style={styles.botones}>
@@ -109,7 +181,13 @@ const styles = StyleSheet.create({
     height: 120,
     backgroundColor: "yellow",
     position: 'absolute',
-    bottom: 100
+    bottom: 200
+  },
+  autoEnemigo: {
+    width: autoAncho,
+    height: 120,
+    position: 'absolute',
+    // bottom: 200
   }
 })
 
