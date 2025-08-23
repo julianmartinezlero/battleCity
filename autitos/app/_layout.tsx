@@ -1,42 +1,39 @@
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
-import { Dimensions, Pressable, StyleSheet, View } from 'react-native';
+import { Dimensions, Image, Pressable, StyleSheet, View } from 'react-native';
 import 'react-native-reanimated';
 
+import { AUTO_URI } from '@/constants/imagenes';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Auto } from '@/models/auto';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 
-const autoAncho=100
+const AUTO_ANCHO=100
+const AUTO_ALTO=200
+const CARRILES = 2
+const COLORES = [
+  '#fc0a0aff',
+  '#f6ff00ff',
+  '#1303ffff',
+  '#ff01c4ff',
+  '#00fffbff', 
+  '#ffb700ff',
+  '#313131',
+  '#00e004ff'
+]
+
 
 
 export default function RootLayout() {
   const screenWidth = Dimensions.get('screen').width;
   const screenHeight = Dimensions.get('screen').height;
-  const [autos, setAutos] = useState([
-  { 
-    id: 12,
-    'modelo' : '12321',
-    'color' : '#fa434a',
-    'heigth' : 120,
-    width: 100,
-    'ubicacionX': (screenWidth/4) - (100 /2),
-    ubicacionY:  200,
-    carril: 'izq'
- },
-  { 
-    id: 14,
-    'modelo' : '12321',
-    'color' : '#faa34a',
-    'heigth' : 120,
-    width: 100,
-    'ubicacionX': ((screenWidth/4) * 3) - (100 /2),
-    ubicacionY: 0,
-    carril: 'der'
-  }
-])
+  const [autos, setAutos] = useState<Auto[]>([])
+  const [velocidad, setVelocidad] = useState(4)
+
+  const autosRef = useRef(autos)
+  const ultimoTiempo = useRef<number>(0)
 
   const colorScheme = useColorScheme();
 
@@ -47,37 +44,71 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
-  const iniciarMotor = () => {
-    // PARA X; condicion; incrementar HACER:
-
-    for (const au of autos) {
-      if(au.ubicacionY < screenHeight - 50) {
-        au.ubicacionY = au.ubicacionY + 1
-      }
-    }
+  const calcularIzquierda = () => {
+    return (screenWidth/4) - (AUTO_ANCHO /2)
+  }
+  const calcularDerecha = () => {
+    return ((screenWidth/4) * 3) - (AUTO_ANCHO /2)
+  }
 
 
-    const nuevoAuto: Auto = {
-      id: (new Date()).getTime(),
+  const crearAuto = () => {
+    
+    const ubi = Math.floor(Math.random() * CARRILES)
+
+    const ubi1 = ubi > 0 ? 'der': 'izq'
+    
+    // Math.floor(Math.random() * COLORES.length)
+    //  Math.floor(0.99 * 8)
+      const nuevoAuto: Auto = {
+      id: Math.floor(new Date().getTime() * Math.random()),
       'modelo' : '12321',
-      'color' : '#003bfeff',
-      'heigth' : 120,
-      width: 100,
-      'ubicacionX': (screenWidth/4) - (100 /2),
-      ubicacionY:  0,
-      carril: 'izq'
+      'color' : COLORES[Math.floor(Math.random() * COLORES.length)],
+      'heigth' : AUTO_ALTO,
+      width: AUTO_ANCHO,
+      'ubicacionX': ubi1==='izq' ? calcularIzquierda() : calcularDerecha(),
+      ubicacionY:  0 - AUTO_ALTO,
+      carril: ubi1
     }
-    setAutos([...autos, nuevoAuto])
 
-    console.log(autos.length)
+
+
+    return nuevoAuto
+  }
+
+
+  autosRef.current = autos
+  const iniciarMotor = (tiempo: any) => {
+    
+    const autoActuales = autosRef.current;
+
+    const ubicacionActualAutos = autoActuales.map( auto => {
+      return {...auto, ubicacionY: auto.ubicacionY + velocidad }
+    })
+
+    const filtrarValidos = ubicacionActualAutos.filter(auto => {
+      return auto.ubicacionY < screenHeight + auto.heigth
+    })
+
+    let autosFinales= [...filtrarValidos]
+
+    const ahora = Date.now()
+
+    if (ahora - ultimoTiempo.current > 5000) {
+      const nuevoAuto = crearAuto()
+      autosFinales.push(nuevoAuto)
+      ultimoTiempo.current = ahora
+    }
+
+    setAutos(autosFinales)
+
+    requestAnimationFrame(iniciarMotor)
   }
 
 
   useEffect(() => {
     // iniciarMotor()
-    setInterval(() => {
-      iniciarMotor()
-    }, 50)
+    requestAnimationFrame(iniciarMotor)
   }, [])
 
 
@@ -87,12 +118,7 @@ export default function RootLayout() {
     return null;
   }
 
-  const calcularIzquierda = () => {
-    return (screenWidth/4) - (autoAncho /2)
-  }
-  const calcularDerecha = () => {
-    return ((screenWidth/4) * 3) - (autoAncho /2)
-  }
+
 
   const moverDerecha = () => {
     console.log(ubicacion)
@@ -129,7 +155,15 @@ export default function RootLayout() {
       <View style={styles.contenedor}>
         <View style={styles.canvas}>
           {dibujarAutos()}
-          <View style={{...styles.auto, left: ubicacion === 'izq' ? calcularIzquierda() : calcularDerecha()}}></View>
+          <View style={{...styles.auto, left: ubicacion === 'izq' ? calcularIzquierda() : calcularDerecha()}}>
+          
+              <Image
+          style={styles.autoImagen}
+          source={{
+            uri: AUTO_URI,
+          }}
+        />
+          </View>
         </View>
         <View style={styles.botones}>
         <Pressable style={styles.btnIzq} onPress={ () => moverIzquierda()}>
@@ -176,16 +210,22 @@ const styles = StyleSheet.create({
     width: '50%',
 
   },
+  autoImagen: {
+    width: 'auto',
+    height: '100%'
+  },
+
   auto: {
-    width: autoAncho,
-    height: 120,
-    backgroundColor: "yellow",
+    width: AUTO_ANCHO,
+    height: AUTO_ALTO,
+    backgroundColor: "transparent",
     position: 'absolute',
-    bottom: 200
+    bottom: 200,
+    backgroundImage: '/assets/images/autito.png'
   },
   autoEnemigo: {
-    width: autoAncho,
-    height: 120,
+    width: AUTO_ANCHO,
+    height: AUTO_ALTO,
     position: 'absolute',
     // bottom: 200
   }
