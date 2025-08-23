@@ -1,27 +1,24 @@
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
-import { Dimensions, Image, Pressable, StyleSheet, View } from 'react-native';
+import { Dimensions, Image, ImageBackground, Pressable, StyleSheet, View } from 'react-native';
 import 'react-native-reanimated';
 
-import { AUTO_URI } from '@/constants/imagenes';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Auto } from '@/models/auto';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 
 const AUTO_ANCHO=100
 const AUTO_ALTO=200
 const CARRILES = 2
 const COLORES = [
-  '#fc0a0aff',
-  '#f6ff00ff',
-  '#1303ffff',
-  '#ff01c4ff',
-  '#00fffbff', 
-  '#ffb700ff',
-  '#313131',
-  '#00e004ff'
+  'rojo',
+  'amarillo',
+  'verde',
+  'azul',
+  'lila',
+  'negro'
 ]
 
 
@@ -30,10 +27,14 @@ export default function RootLayout() {
   const screenWidth = Dimensions.get('screen').width;
   const screenHeight = Dimensions.get('screen').height;
   const [autos, setAutos] = useState<Auto[]>([])
-  const [velocidad, setVelocidad] = useState(4)
+  const [velocidad, setVelocidad] = useState(5)
+
+  const animationRef = useRef<number>(0);
+  const ultimoFrameTime = useRef<number>(0);
 
   const autosRef = useRef(autos)
   const ultimoTiempo = useRef<number>(0)
+  const lastFrameTimeRef = useRef<number>(0)
 
   const colorScheme = useColorScheme();
 
@@ -77,39 +78,41 @@ export default function RootLayout() {
   }
 
 
-  autosRef.current = autos
-  const iniciarMotor = (tiempo: any) => {
-    
-    const autoActuales = autosRef.current;
+  // Mantener autosRef actualizado
+  useEffect(() => {
+    autosRef.current = autos;
+  }, [autos]);
 
-    const ubicacionActualAutos = autoActuales.map( auto => {
-      return {...auto, ubicacionY: auto.ubicacionY + velocidad }
-    })
+  const iniciarMotor = useCallback((tiempo: number) => {
+    // Control de FPS
+    if (tiempo - ultimoFrameTime.current < 16.67) {
+      animationRef.current = requestAnimationFrame(iniciarMotor);
+      return;
+    }
+    ultimoFrameTime.current = tiempo;
 
-    const filtrarValidos = ubicacionActualAutos.filter(auto => {
-      return auto.ubicacionY < screenHeight + auto.heigth
-    })
+    // Lógica principal
+    const nuevosAutos = autosRef.current.map(auto => ({
+      ...auto,
+      ubicacionY: auto.ubicacionY + velocidad
+    })).filter(auto => auto.ubicacionY < screenHeight + auto.heigth);
 
-    let autosFinales= [...filtrarValidos]
-
-    const ahora = Date.now()
-
-    if (ahora - ultimoTiempo.current > 5000) {
-      const nuevoAuto = crearAuto()
-      autosFinales.push(nuevoAuto)
-      ultimoTiempo.current = ahora
+    // Agregar nuevo auto cada 4 segundos
+    const ahora = Date.now();
+    if (ahora - ultimoTiempo.current > 3000) {
+      nuevosAutos.push(crearAuto());
+      ultimoTiempo.current = ahora;
     }
 
-    setAutos(autosFinales)
+    setAutos(nuevosAutos);
+    animationRef.current = requestAnimationFrame(iniciarMotor);
+  }, [velocidad, screenHeight]);
 
-    requestAnimationFrame(iniciarMotor)
-  }
-
-
+  // Inicialización
   useEffect(() => {
-    // iniciarMotor()
-    requestAnimationFrame(iniciarMotor)
-  }, [])
+    animationRef.current = requestAnimationFrame(iniciarMotor);
+    return () => cancelAnimationFrame(animationRef.current);
+  }, [iniciarMotor]);
 
 
 
@@ -129,21 +132,40 @@ export default function RootLayout() {
   const moverIzquierda = () => {
     if (ubicacion === 'der')
       setUbicacion('izq')
-    console.log(ubicacion)
-
-
   }
 
+  // '',
+  // '',
+  // '',
+  // '',
+  // '',
+  const obtenerImagen = (auto: Auto) => {
+    switch(auto.color) {
+      case 'negro':
+        return require('./../assets/images/autito_negro.png');
+      case 'rojo':
+        return require('./../assets/images/autito_rojo.png');
+      case 'azul':
+        return require('./../assets/images/autito_azul.png');
+      case 'verde':
+        return require('./../assets/images/autito_verde.png');
+      case 'lila':
+        return require('./../assets/images/autito_lila.png');
+      default:
+        return require('./../assets/images/autito.png');
+    }
+  };
 
 
   const dibujarAutos = () => {
     return autos.map(r => {
-      return (<View key={r.id} style={
+      return (<Image key={r.id} style={
         {...styles.autoEnemigo,
-        backgroundColor: r.color,
-        left: r.ubicacionX, top: r.ubicacionY}}>
+        left: r.ubicacionX, top: r.ubicacionY}}
+        source={obtenerImagen(r)}
+        />
 
-      </View>)
+      )
     })
   }
 
@@ -152,16 +174,22 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <StatusBar style="auto" />
-      <View style={styles.contenedor}>
+            <ImageBackground
+      
+        source={require('./../assets/images/carretera.jpg')}
+        resizeMode="repeat" // ✅ Patrón repetitivo
+        style={styles.contenedor}
+      >
+        {/* Si necesitas contenido dentro del auto */}
+   
+      {/* <View style={styles.contenedor}> */}
         <View style={styles.canvas}>
           {dibujarAutos()}
           <View style={{...styles.auto, left: ubicacion === 'izq' ? calcularIzquierda() : calcularDerecha()}}>
           
               <Image
           style={styles.autoImagen}
-          source={{
-            uri: AUTO_URI,
-          }}
+          source={require('./../assets/images/autito.png')}
         />
           </View>
         </View>
@@ -172,7 +200,8 @@ export default function RootLayout() {
 
         </Pressable>
         </View>
-      </View>
+           </ImageBackground>
+      {/* </View> */}
     </ThemeProvider>
   );
 
@@ -182,19 +211,17 @@ const styles = StyleSheet.create({
   contenedor: {
     width: '100%',
     height: '100%',
-    backgroundColor: 'red'
   },
   canvas: {
-    backgroundColor: 'grey',
     width: '100%',
     height: '100%',
   },
   botones: {
-    height:'25%',
+    height:'50%',
     width: '100%',
     position: 'absolute',
     bottom: 0,
-    opacity: 0.3,
+    opacity: 0,
     display: 'flex',
     flexDirection: 'row',
   },
